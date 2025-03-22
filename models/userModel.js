@@ -16,6 +16,11 @@ const UserSchema = new Schema({
     password: {
         type: String
     },
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
     repositories: [
         {
             default: [],

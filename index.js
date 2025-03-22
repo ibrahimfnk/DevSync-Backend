@@ -5,6 +5,8 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const http = require('http');
 const { Server } = require('socket.io');
+const passport = require('passport');
+const session = require('express-session');
 const mainRouter = require('./routes/main.router.js');
 
 const yargs = require('yargs');
@@ -65,6 +67,15 @@ function startServer() {
 
     app.use(bodyParser.json());
     app.use(express.json());
+
+    app.use(session({
+        secret: process.env.SESSION_SECRET || "secret",
+        resave: false,
+        saveUninitialized: false
+    }));
+
+    app.use(passport.initialize());
+    app.use(passport.session());
 
     const mongoURI = process.env.MONGODB_URI;
 
