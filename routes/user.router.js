@@ -25,8 +25,8 @@ userRouter.get("/auth/google/callback", passport.authenticate("google", { sessio
 userRouter.get("/allUsers", userController.getAllUsers);
 userRouter.post("/signUp", userController.signUp);
 userRouter.post("/login", userController.login);
-userRouter.get("/getUserProfile", userController.getUserProfile);
-userRouter.put("/updateUserProfile", userController.updateUserProfile);
-userRouter.delete("/deleteUserProfile", userController.deleteUserProfile);
+userRouter.get("/userProfile/:id", userController.getUserProfile);
+userRouter.put("/userProfile/update/:id", userController.updateUserProfile);
+userRouter.delete("/userProfile/delete/:id", userController.deleteUserProfile);
 
 module.exports = userRouter;

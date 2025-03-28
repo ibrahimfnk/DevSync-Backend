@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const {MongoClient} = require('mongodb');
+const {MongoClient, ReturnDocument} = require('mongodb');
 const dotenv = require('dotenv');
+let ObjectId = require('mongodb').ObjectId;
 
 dotenv.config();
 
@@ -20,9 +21,21 @@ async function connectToDatabase() {
     return client;
 }
 
-const getAllUsers = (req, res) => {
-    res.send("All users fetched");
+async function getAllUsers(req, res) {
+    try {
+        await connectToDatabase();
+        const db = client.db('devsync');
+        const usersCollection = db.collection('users');
+
+        const users = await usersCollection.find({}).toArray();
+        res.status(200).json(users);
+    } catch (error) {
+        console.error("Error fetching all users: ", error.message);
+        res.status(500).send("Server error");
+    }
 };
+
+
 
 
 async function signUp(req, res) {
@@ -30,7 +43,7 @@ async function signUp(req, res) {
     try {
         await connectToDatabase();
         const db = client.db('devsync');
-        const usersCollection = db.collection('user');
+        const usersCollection = db.collection('users');
         const user = await usersCollection.findOne({ username });
         if (user) {
             res.status(400).send("User already exists");
@@ -62,7 +75,7 @@ async function login(req, res) {
     try {
         await connectToDatabase();
         const db = client.db('devsync');
-        const usersCollection = db.collection('user');
+        const usersCollection = db.collection('users');
         const user = await usersCollection.findOne({ email });
         if (!user) {
             res.status(400).send("Invalid credentials");
@@ -83,16 +96,70 @@ async function login(req, res) {
     }
 };
 
-const getUserProfile = (req, res) => {
-    res.send("User profile fetched");
+async function getUserProfile(req, res) {
+    const id = req.params.id;
+    try {
+        await connectToDatabase();
+        const db = client.db('devsync');
+        const usersCollection = db.collection('users');
+        const user = await usersCollection.findOne({ _id: new ObjectId(id) });
+        if (!user) {
+            res.status(404).send("User not found");
+        } else {
+            res.status(200).json(user);
+        }
+    } catch (error) {
+        console.error("Error fetching user profile: ", error.message);
+        res.status(500).send("Server error");
+    }
 };
 
-const updateUserProfile = (req, res) => {
-    res.send("Profile updated");
+async function updateUserProfile(req, res) {
+    const id = req.params.id;
+    const {email, password} = req.body;
+    try {
+        await connectToDatabase();
+        const db = client.db('devsync');
+        const usersCollection = db.collection('users');
+        const user = await usersCollection.findOne({ _id: new ObjectId(id) });
+        if (!user) {
+            res.status(404).send("User not found");
+        } else {
+            const updatedUser = {email};
+            if (password) {
+                const salt = await bcrypt.genSalt(10);
+                const hashedPassword = await bcrypt.hash(password, salt);
+                updatedUser.password = hashedPassword;
+            }
+
+            const result = await usersCollection.updateOne({ _id: new ObjectId(id) }, { $set: updatedUser }, {returnDocument: 'after'});
+
+            res.send(result.value);
+        }
+    } catch (error) {
+        console.error("Error updating user profile: ", error.message);
+        res.status(500).send("Server error");
+    }
+
 };
 
-const deleteUserProfile = (req, res) => {
-    res.send("Profile deleted");
+async function deleteUserProfile(req, res) {
+    id = req.params.id;
+    try {
+        await connectToDatabase();
+        const db = client.db('devsync');
+        const usersCollection = db.collection('users');
+        const user = await usersCollection.findOne({ _id: new ObjectId(id) });
+        if (!user) {
+            res.status(404).send("User not found");
+        } else {
+            const result = await usersCollection.deleteOne({ _id: new ObjectId(id) });
+            res.status(200).send("User deleted");
+        }
+    } catch (error) {
+        console.error("Error deleting user profile: ", error.message);
+        res.status(500).send("Server error");
+    }
 }
 
 
