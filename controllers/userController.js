@@ -62,7 +62,7 @@ async function signUp(req, res) {
             const token = jwt.sign({ id: result.insertId }, process.env.JWT_SECRET_KEY, {
                 expiresIn: '1h'
             });
-            res.status(201).json({ token });
+            res.status(201).json({ token,userId: result.insertedId });
         };
     } catch (error) {
         console.error("Error during signup: ", error.message);

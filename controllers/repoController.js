@@ -4,7 +4,6 @@ const User = require("../models/userModel");
 const Issue = require("../models/issueModel");
 
 
-
 async function createRepository(req, res) {
     const { owner, name, issues, content ,description, visibility } = req.body;
 
@@ -38,7 +37,6 @@ async function createRepository(req, res) {
     }
 };
 
-
 async function getAllRepositories(req, res) {
     try {
         const repositories = await Repository.find({}).populate("owner").populate("issues").exec();
@@ -48,7 +46,6 @@ async function getAllRepositories(req, res) {
         console.error("Error fetching repositories:", error);
         res.status(500).json({ message: "Internal server error" });
     }
-
 };
 
 async function fetchRepositoryById(req, res) {
@@ -79,23 +76,24 @@ async function fetchRepositoryByName(req, res) {
     }
 };
 
-
 async function fetchRepositoriesForCurrentUser(req, res) {
-    const userID = req.user;
-
-    try{
-        const repositories = await Repository.find({ owner: userID });
-
-        if (!repositories || repositories.length === 0) {
-            return res.status(404).json({ message: "No repositories found for this user" });
-        }
-        res.status(200).json({ message: "Repositories Found" ,repositories });
-    } catch (error) {
-        console.error("Error fetching repositories for current user:", error);
-        res.status(500).json({ message: "Internal server error" });
+    console.log(req.params);
+    const { userID } = req.params;
+  
+    try {
+      const repositories = await Repository.find({ owner: userID });
+  
+      if (!repositories || repositories.length == 0) {
+        return res.status(404).json({ error: "User Repositories not found!" });
+      }
+      console.log(repositories);
+      res.json({ message: "Repositories found!", repositories });
+    } catch (err) {
+      console.error("Error during fetching user repositories : ", err.message);
+      res.status(500).send("Server error");
     }
-};
-
+  }
+  
 async function toggleVisibility(req, res) {
     const { id } = req.params;
 
@@ -149,6 +147,83 @@ async function deleteRepository(req, res) {
     }
 };
 
+async function starRepository(req, res) {
+    const { repoId } = req.params;
+    const { userId } = req.body;
+
+    try {
+        await connectToDatabase();
+        const db = client.db('devsync');
+        const usersCollection = db.collection('users');
+        const reposCollection = db.collection('repositories');
+
+        // Check if repository exists
+        const repo = await reposCollection.findOne({ _id: new ObjectId(repoId) });
+        if (!repo) {
+            return res.status(404).json({ message: "Repository not found" });
+        }
+
+        // Update user's starred repositories
+        const result = await usersCollection.updateOne(
+            { _id: new ObjectId(userId) },
+            { $addToSet: { starredRepositories: new ObjectId(repoId) } }
+        );
+
+        if (result.modifiedCount === 0) {
+            return res.status(400).json({ message: "Repository already starred" });
+        }
+
+        // Get updated user data
+        const updatedUser = await usersCollection.findOne({ _id: new ObjectId(userId) });
+
+        res.status(200).json({
+            message: "Repository starred successfully",
+            starredRepositories: updatedUser.starredRepositories
+        });
+    } catch (error) {
+        console.error("Error starring repository:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+}
+
+async function unstarRepository(req, res) {
+    const { repoId } = req.params;
+    const { userId } = req.body;
+
+    try {
+        await connectToDatabase();
+        const db = client.db('devsync');
+        const usersCollection = db.collection('users');
+        const reposCollection = db.collection('repositories');
+
+        // Check if repository exists
+        const repo = await reposCollection.findOne({ _id: new ObjectId(repoId) });
+        if (!repo) {
+            return res.status(404).json({ message: "Repository not found" });
+        }
+
+        // Update user's starred repositories
+        const result = await usersCollection.updateOne(
+            { _id: new ObjectId(userId) },
+            { $pull: { starredRepositories: new ObjectId(repoId) } }
+        );
+
+        if (result.modifiedCount === 0) {
+            return res.status(400).json({ message: "Repository not starred" });
+        }
+
+        // Get updated user data
+        const updatedUser = await usersCollection.findOne({ _id: new ObjectId(userId) });
+
+        res.status(200).json({
+            message: "Repository unstarred successfully",
+            starredRepositories: updatedUser.starredRepositories
+        });
+    } catch (error) {
+        console.error("Error unstarring repository:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+}
 
 module.exports = {
     createRepository,
@@ -158,5 +233,7 @@ module.exports = {
     fetchRepositoriesForCurrentUser,
     toggleVisibility,
     updateRepository,
-    deleteRepository
+    deleteRepository,
+    starRepository,
+    unstarRepository
 };
