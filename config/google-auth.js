@@ -57,7 +57,7 @@ passport.serializeUser((user, done) => {
 passport.deserializeUser(async (id, done) => {
     try {
         const db = await connectToDatabase();
-        const usersCollection = db.collection("user");
+        const usersCollection = db.collection("users");
         const user = await usersCollection.findOne({ $or: [{ googleId: id }, { _id: id }] });
         done(null, user);
     } catch (error) {
