@@ -26,7 +26,7 @@ passport.use(
         async (accessToken, refreshToken, profile, done) => {
             try {
                 const db = await connectToDatabase();
-                const usersCollection = db.collection("user");
+                const usersCollection = db.collection("users");
 
                 let user = await usersCollection.findOne({ googleId: profile.id });
 
