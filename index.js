@@ -84,12 +84,22 @@ function startServer() {
     .then(() => console.log("MongoDB connected"))
     .catch(err => console.log("Unable to connect", err));
 
-    app.use(
+    const allowedOrigins = [
+        "https://dev-sync-frontend-smoky.vercel.app",
+      ];
+      
+      app.use(
         cors({
-          origin: "https://dev-sync-frontend-smoky.vercel.app", // Allow only your frontend
+          origin: function (origin, callback) {
+            if (!origin || allowedOrigins.includes(origin)) {
+              callback(null, true);
+            } else {
+              callback(new Error("Not allowed by CORS"));
+            }
+          },
           methods: ["GET", "POST", "PUT", "DELETE"],
           allowedHeaders: ["Content-Type", "Authorization"],
-          credentials: true,
+          credentials: true, // Important for cookies/session auth
         })
       );
 
