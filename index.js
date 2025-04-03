@@ -84,7 +84,17 @@ function startServer() {
     .then(() => console.log("MongoDB connected"))
     .catch(err => console.log("Unable to connect", err));
 
-    app.use(cors({origin : "*"}));
+    app.use(
+        cors({
+          origin: "https://dev-sync-frontend-smoky.vercel.app", // Allow only your frontend
+          methods: ["GET", "POST", "PUT", "DELETE"],
+          allowedHeaders: ["Content-Type", "Authorization"],
+          credentials: true,
+        })
+      );
+
+    app.options("*", cors());
+
 
     app.use("/", mainRouter);
 
